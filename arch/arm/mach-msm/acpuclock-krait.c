@@ -825,7 +825,7 @@ static void __init bus_init(const struct l2_level *l2_level)
 #ifdef CONFIG_USERSPACE_VOLTAGE_CONTROL
 
 #define MAX_VDD 1300
-#define MIN_VDD 650
+#define MIN_VDD 675
 
 int get_num_freqs(void)
 {
