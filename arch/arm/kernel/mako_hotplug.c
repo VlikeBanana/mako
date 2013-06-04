@@ -98,7 +98,7 @@ static void first_level_work_check(unsigned long now)
     {
         if (cpu && likely(!cpu_online(cpu)))
         {
-            cpu_up(cpu);
+            __cpuinit cpu_up(cpu);
 
             /* lets boost the onlined cpu to 1GHz (default).
                stays there for at least a sample. If the CPU is
@@ -135,7 +135,7 @@ static void second_level_work_check(unsigned long now)
     {
         if (cpu && likely(!cpu_online(cpu)))
         {
-            cpu_up(cpu);
+            __cpuinit cpu_up(cpu);
 
             cpufreq_get_policy(&policy, cpu);
             __cpufreq_driver_target(&policy, ONLINE_CPU_BOOST, 
