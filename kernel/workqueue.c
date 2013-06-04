@@ -3725,7 +3725,6 @@ void freeze_workqueues_begin(void)
 
 	spin_unlock(&workqueue_lock);
 }
-
 /**
  * freeze_workqueues_busy - are freezable workqueues still busy?
  *
