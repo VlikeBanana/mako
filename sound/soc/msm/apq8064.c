@@ -108,6 +108,10 @@ static int apq8064_hs_detect_use_gpio = -1;
 module_param(apq8064_hs_detect_use_gpio, int, 0444);
 MODULE_PARM_DESC(apq8064_hs_detect_use_gpio, "Use GPIO for headset detection");
 
+static bool apq8064_hs_detect_extn_cable;
+module_param(apq8064_hs_detect_extn_cable, bool, 0444);
+MODULE_PARM_DESC(apq8064_hs_detect_extn_cable, "Enable extension cable feature");
+
 static bool apq8064_hs_detect_use_firmware;
 module_param(apq8064_hs_detect_use_firmware, bool, 0444);
 MODULE_PARM_DESC(apq8064_hs_detect_use_firmware, "Use firmware for headset "
@@ -127,6 +131,7 @@ static struct tabla_mbhc_config mbhc_cfg = {
 	.gpio = 0,
 	.gpio_irq = 0,
 	.gpio_level_insert = 1,
+	.detect_extn_cable = false,
 };
 
 static struct mutex cdc_mclk_mutex;
@@ -1217,8 +1222,9 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_sync(dapm);
 
 	err = snd_soc_jack_new(codec, "Headset Jack",
-			       (SND_JACK_HEADSET | SND_JACK_OC_HPHL |
-				SND_JACK_OC_HPHR | SND_JACK_UNSUPPORTED),
+			       (SND_JACK_HEADSET |  SND_JACK_LINEOUT |
+				SND_JACK_OC_HPHL |  SND_JACK_OC_HPHR |
+				SND_JACK_UNSUPPORTED),
 			       &hs_jack);
 	if (err) {
 		pr_err("failed to create new jack\n");
@@ -1272,6 +1278,8 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 			return err;
 		}
 		gpio_direction_input(JACK_DETECT_GPIO);
+		if (apq8064_hs_detect_extn_cable)
+			mbhc_cfg.detect_extn_cable = true;
 	} else
 		pr_debug("%s: Not using MBHC mechanical switch\n", __func__);
 
@@ -1370,6 +1378,24 @@ static int msm_slim_4_tx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 			channels->min, channels->max);
 	return 0;
 }
+
+static int msm_slim_4_rx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
+			struct snd_pcm_hw_params *params)
+{
+	struct snd_interval *rate = hw_param_interval(params,
+			SNDRV_PCM_HW_PARAM_RATE);
+
+	struct snd_interval *channels = hw_param_interval(params,
+			SNDRV_PCM_HW_PARAM_CHANNELS);
+
+	rate->min = rate->max = 48000;
+	channels->min = channels->max = 1;
+
+	pr_debug("%s channels->min %u channels->max %u ()\n", __func__,
+			channels->min, channels->max);
+	return 0;
+}
+
 
 static int msm_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 			struct snd_pcm_hw_params *params)
@@ -2026,7 +2052,7 @@ static struct snd_soc_dai_link msm_dai[] = {
 		.codec_dai_name = "msm-stub-rx",
 		.no_pcm = 1,
 		.be_id = MSM_BACKEND_DAI_SLIMBUS_4_RX,
-		.be_hw_params_fixup = msm_be_hw_params_fixup,
+		.be_hw_params_fixup = msm_slim_4_rx_be_hw_params_fixup,
 		.ops = &msm_slimbus_4_be_ops,
 		.ignore_pmdown_time = 1, /* this dainlink has playback support */
 	},
