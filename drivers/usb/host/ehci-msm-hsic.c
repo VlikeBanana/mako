@@ -1,6 +1,6 @@
 /* ehci-msm-hsic.c - HSUSB Host Controller Driver Implementation
  *
- * Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2013, Linux Foundation. All rights reserved.
  *
  * Partly derived from ehci-fsl.c and ehci-hcd.c
  * Copyright (c) 2000-2004 by David Brownell
@@ -41,6 +41,7 @@
 #include <linux/kthread.h>
 #include <linux/wait.h>
 #include <linux/pm_qos.h>
+#include <linux/irq.h>
 
 #include <mach/msm_bus.h>
 #include <mach/clk.h>
@@ -1272,9 +1273,14 @@ resume_again:
 				pm_qos_update_request(&mehci->pm_qos_req_dma,
 					pdata->swfi_latency + 1);
 			wait_for_completion(&mehci->gpt0_completion);
+
 			if (pdata && pdata->standalone_latency)
 				pm_qos_update_request(&mehci->pm_qos_req_dma,
 					pdata->standalone_latency + 1);
+
+			if (pdata && pdata->swfi_latency)
+				pm_qos_update_request(&mehci->pm_qos_req_dma,
+					PM_QOS_DEFAULT_VALUE);
 			spin_lock_irq(&ehci->lock);
 		} else {
 			dbg_log_event(NULL, "FPR: Tightloop", 0);
@@ -2019,6 +2025,10 @@ static int __devinit ehci_hsic_msm_probe(struct platform_device *pdev)
 	if (pdata && pdata->standalone_latency)
 		pm_qos_add_request(&mehci->pm_qos_req_dma,
 			PM_QOS_CPU_DMA_LATENCY, pdata->standalone_latency + 1);
+
+	if (pdata && pdata->swfi_latency)
+		pm_qos_add_request(&mehci->pm_qos_req_dma,
+			PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
 
 	/*
 	 * This pdev->dev is assigned parent of root-hub by USB core,
