@@ -3,6 +3,7 @@
 #ifndef FREEZER_H_INCLUDED
 #define FREEZER_H_INCLUDED
 
+#include <linux/debug_locks.h>
 #include <linux/sched.h>
 #include <linux/wait.h>
 #include <linux/atomic.h>
@@ -58,6 +59,8 @@ static inline bool try_to_freeze_unsafe(void)
 
 static inline bool try_to_freeze(void)
 {
+	if (!(current->flags & PF_NOFREEZE))
+		debug_check_no_locks_held();
 	return try_to_freeze_unsafe();
 }
 
@@ -113,14 +116,15 @@ static inline void freezer_do_not_count(void)
 static inline void freezer_count(void)
 {
 	current->flags &= ~PF_FREEZER_SKIP;
-	/*
-	 * If freezing is in progress, the following paired with smp_mb()
-	 * in freezer_should_skip() ensures that either we see %true
-	 * freezing() or freezer_should_skip() sees !PF_FREEZER_SKIP.
-	 */
-	smp_mb();
+  /*
+   * If freezing is in progress, the following paired with smp_mb()
+   * in freezer_should_skip() ensures that either we see %true
+   * freezing() or freezer_should_skip() sees !PF_FREEZER_SKIP.
+   */
+  smp_mb();
 	try_to_freeze();
 }
+
 
 /* DO NOT ADD ANY NEW CALLERS OF THIS FUNCTION */
 static inline void freezer_count_unsafe(void)
@@ -142,21 +146,22 @@ static inline void freezer_count_unsafe(void)
  */
 static inline bool freezer_should_skip(struct task_struct *p)
 {
-	/*
-	 * The following smp_mb() paired with the one in freezer_count()
-	 * ensures that either freezer_count() sees %true freezing() or we
-	 * see cleared %PF_FREEZER_SKIP and return %false.  This makes it
-	 * impossible for a task to slip frozen state testing after
-	 * clearing %PF_FREEZER_SKIP.
-	 */
-	smp_mb();
-	return p->flags & PF_FREEZER_SKIP;
+  /*
+   * The following smp_mb() paired with the one in freezer_count()
+   * ensures that either freezer_count() sees %true freezing() or we
+   * see cleared %PF_FREEZER_SKIP and return %false.  This makes it
+   * impossible for a task to slip frozen state testing after
+   * clearing %PF_FREEZER_SKIP.
+   */
+  smp_mb();
+  return p->flags & PF_FREEZER_SKIP;
 }
 
 /*
- * These functions are intended to be used whenever you want allow a sleeping
- * task to be frozen. Note that neither return any clear indication of
- * whether a freeze event happened while in this function.
+ * These macros are intended to be used whenever you want allow a task that's
+ * sleeping in TASK_UNINTERRUPTIBLE or TASK_KILLABLE state to be frozen. Note
+ * that neither return any clear indication of whether a freeze event happened
+ * while in this function.
  */
 
 /* Like schedule(), but should not block the freezer. */

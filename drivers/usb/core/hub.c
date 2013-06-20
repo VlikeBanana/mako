@@ -24,8 +24,8 @@
 #include <linux/kthread.h>
 #include <linux/mutex.h>
 #include <linux/freezer.h>
-#include <linux/usb/otg.h>
 #include <linux/random.h>
+#include <linux/usb/otg.h>
 
 #include <asm/uaccess.h>
 #include <asm/byteorder.h>
@@ -4193,24 +4193,24 @@ static void hub_events(void)
 			/* Warm reset a USB3 protocol port if it's in
 			 * SS.Inactive state.
 			 */
-			if (hub_port_warm_reset_required(hub, portstatus)) {
-				int status;
-				struct usb_device *udev =
-					hub->hdev->children[i - 1];
+                        if (hub_port_warm_reset_required(hub, portstatus)) {
+                            int status;
+                            struct usb_device *udev =
+                                hub->hdev->children[i - 1];
 
-				dev_dbg(hub_dev, "warm reset port %d\n", i);
-				if (!udev) {
-					status = hub_port_reset(hub, i,
-							NULL, HUB_BH_RESET_TIME,
-							true);
-					if (status < 0)
-						hub_port_disable(hub, i, 1);
-				} else {
-					usb_lock_device(udev);
-					status = usb_reset_device(udev);
-					usb_unlock_device(udev);
-				}
-				connect_change = 0;
+                            dev_dbg(hub_dev, "warm reset port %d\n", i);
+                            if (!udev) {
+                                status = hub_port_reset(hub, i,
+                                    NULL, HUB_BH_RESET_TIME,
+                                    true);
+                                if (status < 0)
+                                    hub_port_disable(hub, i, 1);
+                            } else {
+                                usb_lock_device(udev);
+                                status = usb_reset_device(udev);
+                                usb_unlock_device(udev);
+                            }
+                            connect_change = 0;
 			}
 
 			if (connect_change) {

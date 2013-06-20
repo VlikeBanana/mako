@@ -44,6 +44,8 @@
 #define TRUE (!FALSE)
 #endif
 
+#define AUTH_REQ_MASK   0x07
+
 static int smp_distribute_keys(struct l2cap_conn *conn, __u8 force);
 
 static inline void swap128(u8 src[16], u8 dst[16])
@@ -242,7 +244,7 @@ static void build_pairing_cmd(struct l2cap_conn *conn,
 		req->max_key_size = SMP_MAX_ENC_KEY_SIZE;
 		req->init_key_dist = all_keys;
 		req->resp_key_dist = dist_keys;
-		req->auth_req = authreq;
+                req->auth_req = (authreq & AUTH_REQ_MASK);
 		BT_DBG("SMP_CMD_PAIRING_REQ %d %d %d %d %2.2x %2.2x",
 				req->io_capability, req->oob_flag,
 				req->auth_req, req->max_key_size,
@@ -261,7 +263,7 @@ static void build_pairing_cmd(struct l2cap_conn *conn,
 	rsp->max_key_size = SMP_MAX_ENC_KEY_SIZE;
 	rsp->init_key_dist = req->init_key_dist & all_keys;
 	rsp->resp_key_dist = req->resp_key_dist & dist_keys;
-	rsp->auth_req = authreq;
+        rsp->auth_req = (authreq & AUTH_REQ_MASK);
 	BT_DBG("SMP_CMD_PAIRING_RSP %d %d %d %d %2.2x %2.2x",
 			req->io_capability, req->oob_flag, req->auth_req,
 			req->max_key_size, req->init_key_dist,
@@ -446,6 +448,8 @@ int le_user_confirm_reply(struct hci_conn *hcon, u16 mgmt_op, void *cp)
 		smp_send_cmd(conn, SMP_CMD_PAIRING_FAIL, sizeof(reason),
 								&reason);
 		del_timer(&hcon->smp_timer);
+		if (hcon->disconn_cfm_cb)
+			hcon->disconn_cfm_cb(hcon, SMP_UNSPECIFIED);
 		clear_bit(HCI_CONN_ENCRYPT_PEND, &hcon->pend);
 		mgmt_auth_failed(hcon->hdev->id, conn->dst, reason);
 		hci_conn_put(hcon);
@@ -756,8 +760,7 @@ int smp_conn_security(struct l2cap_conn *conn, __u8 sec_level)
 
 	hcon->smp_conn = conn;
 	hcon->pending_sec_level = sec_level;
-
-	if ((hcon->link_mode & HCI_LM_MASTER) && !hcon->sec_req) {
+	if (hcon->link_mode & HCI_LM_MASTER) {
 		struct link_key *key;
 
 		key = hci_find_link_key_type(hcon->hdev, conn->dst,

@@ -389,35 +389,35 @@ static void xhci_cleanup_msix(struct xhci_hcd *xhci)
 
 static void compliance_mode_recovery(unsigned long arg)
 {
-	struct xhci_hcd *xhci;
-	struct usb_hcd *hcd;
-	u32 temp;
-	int i;
+    struct xhci_hcd *xhci;
+    struct usb_hcd *hcd;
+    u32 temp;
+    int i;
 
-	xhci = (struct xhci_hcd *)arg;
+    xhci = (struct xhci_hcd *)arg;
 
-	for (i = 0; i < xhci->num_usb3_ports; i++) {
-		temp = xhci_readl(xhci, xhci->usb3_ports[i]);
-		if ((temp & PORT_PLS_MASK) == USB_SS_PORT_LS_COMP_MOD) {
-			/*
-			 * Compliance Mode Detected. Letting USB Core
-			 * handle the Warm Reset
-			 */
-			xhci_dbg(xhci, "Compliance Mode Detected->Port %d!\n",
-					i + 1);
-			xhci_dbg(xhci, "Attempting Recovery routine!\n");
-			hcd = xhci->shared_hcd;
+    for (i = 0; i < xhci->num_usb3_ports; i++) {
+        temp = xhci_readl(xhci, xhci->usb3_ports[i]);
+        if ((temp & PORT_PLS_MASK) == USB_SS_PORT_LS_COMP_MOD) {
+            /*
+             * Compliance Mode Detected. Letting USB Core
+             * handle the Warm Reset
+             */
+            xhci_dbg(xhci, "Compliance Mode Detected->Port %d!\n",
+                i + 1);
+            xhci_dbg(xhci, "Attempting Recovery routine!\n");
+            hcd = xhci->shared_hcd;
 
-			if (hcd->state == HC_STATE_SUSPENDED)
-				usb_hcd_resume_root_hub(hcd);
+            if (hcd->state == HC_STATE_SUSPENDED)
+                usb_hcd_resume_root_hub(hcd);
 
-			usb_hcd_poll_rh_status(hcd);
-		}
-	}
+            usb_hcd_poll_rh_status(hcd);
+        }
+    }
 
-	if (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1))
-		mod_timer(&xhci->comp_mode_recovery_timer,
-			jiffies + msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
+    if (xhci->port_status_u0 != ((1 << xhci->num_usb3_ports)-1))
+        mod_timer(&xhci->comp_mode_recovery_timer,
+            jiffies + msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
 }
 
 /*
@@ -432,18 +432,18 @@ static void compliance_mode_recovery(unsigned long arg)
  */
 static void compliance_mode_recovery_timer_init(struct xhci_hcd *xhci)
 {
-	xhci->port_status_u0 = 0;
-	init_timer(&xhci->comp_mode_recovery_timer);
+    xhci->port_status_u0 = 0;
+    init_timer(&xhci->comp_mode_recovery_timer);
 
-	xhci->comp_mode_recovery_timer.data = (unsigned long) xhci;
-	xhci->comp_mode_recovery_timer.function = compliance_mode_recovery;
-	xhci->comp_mode_recovery_timer.expires = jiffies +
-			msecs_to_jiffies(COMP_MODE_RCVRY_MSECS);
+    xhci->comp_mode_recovery_timer.data = (unsigned long) xhci;
+    xhci->comp_mode_recovery_timer.function = compliance_mode_recovery;
+    xhci->comp_mode_recovery_timer.expires = jiffies +
+        msecs_to_jiffies(COMP_MODE_RCVRY_MSECS);
 
-	set_timer_slack(&xhci->comp_mode_recovery_timer,
-			msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
-	add_timer(&xhci->comp_mode_recovery_timer);
-	xhci_dbg(xhci, "Compliance Mode Recovery Timer Initialized.\n");
+    set_timer_slack(&xhci->comp_mode_recovery_timer,
+        msecs_to_jiffies(COMP_MODE_RCVRY_MSECS));
+    add_timer(&xhci->comp_mode_recovery_timer);
+    xhci_dbg(xhci, "Compliance Mode Recovery Timer Initialized.\n");
 }
 
 /*
@@ -454,30 +454,29 @@ static void compliance_mode_recovery_timer_init(struct xhci_hcd *xhci)
  */
 static bool compliance_mode_recovery_timer_quirk_check(void)
 {
-	const char *dmi_product_name, *dmi_sys_vendor;
+    const char *dmi_product_name, *dmi_sys_vendor;
 
-	dmi_product_name = dmi_get_system_info(DMI_PRODUCT_NAME);
-	dmi_sys_vendor = dmi_get_system_info(DMI_SYS_VENDOR);
-	if (!dmi_product_name || !dmi_sys_vendor)
-		return false;
+    dmi_product_name = dmi_get_system_info(DMI_PRODUCT_NAME);
+    dmi_sys_vendor = dmi_get_system_info(DMI_SYS_VENDOR);
+    if (!dmi_product_name || !dmi_sys_vendor)
+        return false;
 
-	if (!(strstr(dmi_sys_vendor, "Hewlett-Packard")))
-		return false;
+    if (!(strstr(dmi_sys_vendor, "Hewlett-Packard")))
+        return false;
 
-	if (strstr(dmi_product_name, "Z420") ||
-			strstr(dmi_product_name, "Z620") ||
-			strstr(dmi_product_name, "Z820") ||
-			strstr(dmi_product_name, "Z1 Workstation"))
-		return true;
+    if (strstr(dmi_product_name, "Z420") ||
+            strstr(dmi_product_name, "Z620") ||
+            strstr(dmi_product_name, "Z820") ||
+            strstr(dmi_product_name, "Z1 Workstation"))
+        return true;
 
-	return false;
+    return false;
 }
 
 static int xhci_all_ports_seen_u0(struct xhci_hcd *xhci)
 {
-	return (xhci->port_status_u0 == ((1 << xhci->num_usb3_ports)-1));
+    return (xhci->port_status_u0 == ((1 << xhci->num_usb3_ports)-1));
 }
-
 
 /*
  * Initialize memory for HCD and xHC (one-time init).
@@ -957,6 +956,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
 	struct usb_hcd		*secondary_hcd;
 	int			retval = 0;
+	bool			comp_timer_running = false;
 
 	/* Wait a bit if either of the roothubs need to settle from the
 	 * transition into bus suspend.
@@ -994,6 +994,13 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
 
 	/* If restore operation fails, re-initialize the HC during resume */
 	if ((temp & STS_SRE) || hibernated) {
+
+		if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) &&
+				!(xhci_all_ports_seen_u0(xhci))) {
+			del_timer_sync(&xhci->comp_mode_recovery_timer);
+			xhci_dbg(xhci, "Compliance Mode Recovery Timer deleted!\n");
+		}
+
 		/* Let the USB core know _both_ roothubs lost power. */
 		usb_root_hub_lost_power(xhci->main_hcd->self.root_hub);
 		usb_root_hub_lost_power(xhci->shared_hcd->self.root_hub);
@@ -1036,6 +1043,8 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
 		retval = xhci_init(hcd->primary_hcd);
 		if (retval)
 			return retval;
+		comp_timer_running = true;
+
 		xhci_dbg(xhci, "Start the primary HCD\n");
 		retval = xhci_run(hcd->primary_hcd);
 		if (!retval) {
@@ -1077,7 +1086,7 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
 	 * to suffer the Compliance Mode issue again. It doesn't matter if
 	 * ports have entered previously to U0 before system's suspension.
 	 */
-	if (xhci->quirks & XHCI_COMP_MODE_QUIRK)
+	if ((xhci->quirks & XHCI_COMP_MODE_QUIRK) && !comp_timer_running)
 		compliance_mode_recovery_timer_init(xhci);
 
 	/* Re-enable port polling. */
