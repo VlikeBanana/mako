@@ -1,6 +1,6 @@
 VERSION = 3
 PATCHLEVEL = 4
-SUBLEVEL = 49
+SUBLEVEL = 50
 EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
@@ -577,7 +577,9 @@ else
 KBUILD_CFLAGS  += -O2
 endif
 ifdef CONFIG_CC_OPTIMIZE_O3
-KBUILD_CFLAGS	+= -O3 $(call cc-disable-warning,maybe-uninitialized,)
+KBUILD_CFLAGS   += -O3
+KBUILD_CFLAGS   += $(call cc-disable-warning,maybe-uninitialized)
+KBUILD_CFLAGS   += $(call cc-disable-warning,array-bounds)
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
