@@ -3550,7 +3550,7 @@ static struct clk_freq_tbl clk_tbl_gfx3d_8064[] = {
 	F_GFX3D(266667000, pll2,  1,  3),
 	F_GFX3D(325000000, pll15, 1,  3),
 	F_GFX3D(400000000, pll2,  1,  2),
-	F_GFX3D(487500000, pll15,  1,  2),
+	F_GFX3D(487500000, pll15, 1,  2),
 	F_END
 };
 
@@ -6664,6 +6664,7 @@ static void __init msm8960_clock_pre_init(void)
 	 * clocks which differ between chips.
 	 */
 	if (cpu_is_apq8064() || cpu_is_apq8064aa()) {
+		gfx3d_clk.freq_tbl = clk_tbl_gfx3d_8064;
 		gfx3d_clk.c.fmax = fmax_gfx3d_8064;
 	}
 	if (cpu_is_apq8064ab()) {
