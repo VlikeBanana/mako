@@ -1131,7 +1131,7 @@ static int __init get_pvs_bin(u32 pte_efuse)
         else if (pvs_bin == 3)
             cpu_type = "FAST";
         else if (pvs_bin == 4)
-            cpu_type = "FASTEST";
+            cpu_type = "FASTER";
         
 		dev_info(drv.dev, "ACPU PVS: %s\n", cpu_type);
         
