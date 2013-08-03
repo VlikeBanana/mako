@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm 3.4.54 Kernel Configuration
+# Linux/arm 3.4.55 Kernel Configuration
 #
 CONFIG_ARM=y
 CONFIG_ARM_HAS_SG_CHAIN=y
@@ -602,6 +602,7 @@ CONFIG_HIGH_RES_TIMERS=y
 CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
 CONFIG_HAVE_SMP=y
 CONFIG_SMP=y
+CONFIG_GENERIC_SMP_IDLE_THREAD=y
 # CONFIG_SMP_ON_UP is not set
 CONFIG_ARM_CPU_TOPOLOGY=y
 # CONFIG_SCHED_MC is not set
