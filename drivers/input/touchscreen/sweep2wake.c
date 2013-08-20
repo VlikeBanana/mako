@@ -184,4 +184,3 @@ module_exit(sweep2wake_exit);
 
 MODULE_DESCRIPTION("Sweep2wake");
 MODULE_LICENSE("GPLv2");
-
