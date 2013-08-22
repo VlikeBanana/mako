@@ -622,14 +622,60 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
 #ifdef CONFIG_USERSPACE_VOLTAGE_CONTROL
 
 extern ssize_t acpuclk_get_vdd_levels_str(char *buf);
-extern void acpuclk_set_vdd(const char *buf);
+extern void acpuclk_set_vdd(unsigned acpu_khz, int vdd);
 
-static ssize_t show_UV_mV_table(struct cpufreq_policy *policy, char *buf) {
+static ssize_t show_vdd_levels(struct kobject *a, struct attribute *b, char *buf) {
 	return acpuclk_get_vdd_levels_str(buf);
 }
 
-static ssize_t store_UV_mV_table(struct cpufreq_policy *policy, const char *buf, size_t count) {
-	acpuclk_set_vdd(buf);
+static ssize_t store_vdd_levels(struct kobject *a, struct attribute *b, const char *buf, size_t count) {
+
+	int i = 0, j;
+	int pair[2] = { 0, 0 };
+	int sign = 0;
+
+	if (count < 1)
+		return 0;
+
+	if (buf[0] == '-') {
+		sign = -1;
+		i++;
+	}
+	else if (buf[0] == '+') {
+		sign = 1;
+		i++;
+	}
+
+	for (j = 0; i < count; i++) {
+
+		char c = buf[i];
+
+		if ((c >= '0') && (c <= '9')) {
+			pair[j] *= 10;
+			pair[j] += (c - '0');
+		}
+		else if ((c == ' ') || (c == '\t')) {
+			if (pair[j] != 0) {
+				j++;
+
+				if ((sign != 0) || (j > 1))
+					break;
+			}
+		}
+		else
+			break;
+	}
+
+	if (sign != 0) {
+		if (pair[0] > 0)
+			acpuclk_set_vdd(0, sign * pair[0]);
+	}
+	else {
+		if ((pair[0] > 0) && (pair[1] > 0))
+			acpuclk_set_vdd((unsigned)pair[0], pair[1]);
+		else
+			return -EINVAL;
+	}
 	return count;
 }
 
@@ -651,7 +697,7 @@ cpufreq_freq_attr_rw(scaling_max_freq);
 cpufreq_freq_attr_rw(scaling_governor);
 cpufreq_freq_attr_rw(scaling_setspeed);
 #ifdef CONFIG_USERSPACE_VOLTAGE_CONTROL
-cpufreq_freq_attr_rw(UV_mV_table);
+define_one_global_rw(vdd_levels);
 #endif
 
 static struct attribute *default_attrs[] = {
@@ -667,11 +713,20 @@ static struct attribute *default_attrs[] = {
 	&scaling_driver.attr,
 	&scaling_available_governors.attr,
 	&scaling_setspeed.attr,
-#ifdef CONFIG_USERSPACE_VOLTAGE_CONTROL
-	&UV_mV_table.attr,
-#endif
 	NULL
 };
+
+#ifdef CONFIG_USERSPACE_VOLTAGE_CONTROL
+static struct attribute *vddtbl_attrs[] = {
+	&vdd_levels.attr,
+	NULL
+};
+
+static struct attribute_group vddtbl_attr_group = {
+	.attrs = vddtbl_attrs,
+	.name = "vdd_table",
+};
+#endif
 
 struct kobject *cpufreq_global_kobject;
 EXPORT_SYMBOL(cpufreq_global_kobject);
@@ -809,8 +864,6 @@ static int cpufreq_add_dev_policy(unsigned int cpu,
 
 			spin_lock_irqsave(&cpufreq_driver_lock, flags);
 			cpumask_copy(managed_policy->cpus, policy->cpus);
-			cpumask_and(managed_policy->cpus,
-					managed_policy->cpus, cpu_online_mask);
 			per_cpu(cpufreq_cpu_data, cpu) = managed_policy;
 			spin_unlock_irqrestore(&cpufreq_driver_lock, flags);
 
@@ -1028,13 +1081,6 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
 		pr_debug("initialization failed\n");
 		goto err_unlock_policy;
 	}
-
-	/*
-	 * affected cpus must always be the one, which are online. We aren't
-	 * managing offline cpus here.
-	 */
-	cpumask_and(policy->cpus, policy->cpus, cpu_online_mask);
-
 	policy->user_policy.min = policy->min;
 	policy->user_policy.max = policy->max;
 
@@ -2018,6 +2064,9 @@ EXPORT_SYMBOL_GPL(cpufreq_unregister_driver);
 static int __init cpufreq_core_init(void)
 {
 	int cpu;
+#ifdef CONFIG_USERSPACE_VOLTAGE_CONTROL
+	int rc;
+#endif
 
 	if (cpufreq_disabled())
 		return -ENODEV;
@@ -2030,6 +2079,9 @@ static int __init cpufreq_core_init(void)
 	cpufreq_global_kobject = kobject_create_and_add("cpufreq", &cpu_subsys.dev_root->kobj);
 	BUG_ON(!cpufreq_global_kobject);
 	register_syscore_ops(&cpufreq_syscore_ops);
+#ifdef CONFIG_USERSPACE_VOLTAGE_CONTROL
+	rc = sysfs_create_group(cpufreq_global_kobject, &vddtbl_attr_group);
+#endif
 	return 0;
 }
 core_initcall(cpufreq_core_init);
