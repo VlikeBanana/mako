@@ -131,10 +131,14 @@ static struct attribute_group tz_attr_group = {
 static void tz_wake(struct kgsl_device *device, struct kgsl_pwrscale *pwrscale)
 {
 	struct tz_priv *priv = pwrscale->priv;
-	if (device->state != KGSL_STATE_NAP &&
-		priv->governor == TZ_GOVERNOR_ONDEMAND)
+	if (device->state != KGSL_STATE_NAP){
+		if(priv->governor == TZ_GOVERNOR_ONDEMAND ||
+		 priv->governor == TZ_GOVERNOR_SIMPLE)
 		kgsl_pwrctrl_pwrlevel_change(device,
 					device->pwrctrl.default_pwrlevel);
+		else if(priv->governor == TZ_GOVERNOR_PERFORMANCE)
+			kgsl_pwrctrl_pwrlevel_change(device, device->pwrctrl.max_pwrlevel);
+	}
 }
 
 #define HISTORY_SIZE 10
