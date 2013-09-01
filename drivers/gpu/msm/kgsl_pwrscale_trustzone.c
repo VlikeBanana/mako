@@ -139,7 +139,7 @@ static void tz_wake(struct kgsl_device *device, struct kgsl_pwrscale *pwrscale)
 
 #define HISTORY_SIZE 10
 
-static int ramp_up_threshold = 7000;
+static int ramp_up_threshold = 5000;
 module_param_named(simple_ramp_threshold, ramp_up_threshold, int, 0664);
 
 static unsigned int history[HISTORY_SIZE] = {0};
@@ -236,7 +236,7 @@ static void tz_sleep(struct kgsl_device *device,
      * at 320MHz on the GPU? Makes no sense to me. Lets change the pwrlevel
      * directly and sleep at its lowest frequency 128MHz.
      */
-	kgsl_pwrctrl_pwrlevel_change(device, 3);
+	kgsl_pwrctrl_pwrlevel_change(device, KGSL_MAX_PWRLEVELS - 2);
 	priv->no_switch_cnt = 0;
 	priv->bin.total_time = 0;
 	priv->bin.busy_time = 0;
