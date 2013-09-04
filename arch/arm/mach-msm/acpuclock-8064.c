@@ -138,9 +138,7 @@ static struct l2_level l2_freq_tbl[] __initdata = {
 	{ }
 };
 
-#ifdef CONFIG_CPU_OVERCLOCK
 #define L2_OC_IDX	17
-#endif
 
 static struct acpu_level tbl_slow[] __initdata = {
 	{ 1, {   192000, PLL_8, 0, 0x00 }, L2(0),   825000 },
